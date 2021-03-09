@@ -1,0 +1,50 @@
+service: signUrl
+
+frameworkVersion: '2'
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-plugin-optimize
+  - serverless-offline
+  - serverless-jest-plugin
+
+custom:
+  accountId: !Ref AWS::AccountId
+  jest:
+    # You can pass jest options here
+    # See details here: https://facebook.github.io/jest/docs/configuration.html
+    # For instance, uncomment next line to enable code coverage
+    # collectCoverage: true
+
+provider:
+  apiGateway:
+    shouldStartNameWithService: true
+  name: aws
+  iam:
+    role: arn:aws:iam::337287529583:role/role-customer-statement-s3
+  runtime: nodejs14.x
+  stage: ${env:NODE_ENV}
+  environment:
+    NODE_ENV: ${env:NODE_ENV}
+    CUSTOMER_STATEMENT_BUCKET: 'customer-statements'
+    CUSTOMER_STATEMENT_BUCKET_CONTAINMENT: 'customer-statements-containment'
+    CUSTOMER_STATEMENT_TABLE: 'customer-statement-reports'
+    CUSTOMER_STATEMENT_APP_REGION: 'eu-west-2'
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 'secretsmanager:GetSecretValue'
+      Resource:
+        - '*'
+  region: eu-west-2
+  profile: serverless
+  lambdaHashingVersion: 20201221
+
+functions:
+  generateSignedUrl:
+    handler: handler.signStatement
+    events:
+      - http:
+          path: customer/statement/upload
+          method: get
+          cors: true
